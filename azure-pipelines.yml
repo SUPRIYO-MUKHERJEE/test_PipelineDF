@@ -1,0 +1,72 @@
+pool:
+  vmImage: 'Ubuntu 18.04'
+
+variables:
+- group: demo_vg
+
+
+trigger:
+- None
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.6'
+    architecture: 'x64'   
+
+- task: Bash@3
+  displayName: 'Install Requirements'
+  inputs:
+    targetType: filePath
+    filePath: 'environment_setup/install_requirements.sh'
+    workingDirectory: 'environment_setup'
+
+    
+- task: AzureCLI@2
+  displayName: 'Install Azure ML CLI'
+  inputs:
+    azureSubscription: demo_cocoon #('2d474d30-9456-4d16-b85d-9de26a171464')
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: 'az extension add -n azure-cli-ml'
+
+- script: | 
+    az login -u $(username) -p $(password) -t $(sptenant)
+  displayName: 'Login to Azure'
+
+
+# - script: |
+#    sed -i 's#"subscription_id": "<>"#"subscription_id": "$(subscriptionid)"#g' aml_config/config.json
+   
+#   displayName: 'replace subscription value'
+
+
+# - script: 'pytest tests/unit/data_test.py'
+#   displayName: 'Data Quality Check'
+
+- script: 'python aml_service/00-WorkSpace.py'
+  displayName: 'Get or Create Workspace'
+
+- script: 'python aml_service/03-AttachAmlCluster.py'
+  displayName: 'Create AML Compute Cluster'
+
+- script: 'python aml_service/04-AmlPipelines.py'
+  displayName: 'Create and Test AML Pipeline'
+
+- script: 'python aml_service/04-AmlPipelines.py --pipeline_action publish'
+  displayName: 'Publish AML Pipeline as Endpoint'
+
+- task: CopyFiles@2
+  displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    Contents: '**'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: devops-for-ai'
+  inputs:
+    ArtifactName: 'devops-for-ai'
+    publishLocation: 'container'
+    pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+    TargetPath: '$(Build.ArtifactStagingDirectory)'
