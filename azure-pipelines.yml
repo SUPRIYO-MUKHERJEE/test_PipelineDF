@@ -25,7 +25,7 @@ steps:
 - task: AzureCLI@2
   displayName: 'Install Azure ML CLI'
   inputs:
-    azureSubscription: demo_cocoon #('2d474d30-9456-4d16-b85d-9de26a171464')
+    azureSubscription: My Azure Connection #('2d474d30-9456-4d16-b85d-9de26a171464')
     scriptType: bash
     scriptLocation: inlineScript
     inlineScript: 'az extension add -n azure-cli-ml'
